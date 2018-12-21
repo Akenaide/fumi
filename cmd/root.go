@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"time"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -33,6 +34,7 @@ var cfgFile string
 var spreadsheetId string
 var wSDeckURL string
 var wantJSON bool
+var maxPage int
 
 const output = "decks.json"
 
@@ -54,8 +56,7 @@ to quickly create a Cobra application.`,
 		// spreadsheetId := "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
 		// resp, err := srv.Spreadsheets.Values.Get(spreadsheetId, readRange).Do()
 
-		fmt.Printf("%#v\n", sheet)
-		decks := GetDecks(wSDeckURL)
+		decks := GetDecks(wSDeckURL, maxPage)
 		if wantJSON {
 			log.Println("Export Json")
 			var buffer bytes.Buffer
@@ -110,6 +111,7 @@ to quickly create a Cobra application.`,
 			}
 
 			for _, deck := range decks {
+				log.Println(deck.Name)
 				var rangeSheet = fmt.Sprintf("'%v'!A1:M42", deck.Name)
 				firstLine := []interface{}{"Code", "Color", "Amount"}
 				level0 := [][]interface{}{}
@@ -119,7 +121,6 @@ to quickly create a Cobra application.`,
 				cx := [][]interface{}{}
 				var valueR sheets.ValueRange
 
-				log.Println(deck.Name)
 				var addSheet = &sheets.Request{AddSheet: &sheets.AddSheetRequest{Properties: &sheets.SheetProperties{Title: deck.Name}}}
 				var request = &sheets.BatchUpdateSpreadsheetRequest{Requests: []*sheets.Request{addSheet}}
 				_, err := srv.Spreadsheets.BatchUpdate(spreadsheetId, request).Do()
@@ -158,6 +159,8 @@ to quickly create a Cobra application.`,
 				if err != nil {
 					log.Fatalf("Error when adding value to %v deck : \t %v", deck.Name, err)
 				}
+				// There a rate limite, this is a ugly method to bypass it
+				time.Sleep(5 * time.Second)
 
 			}
 
@@ -187,6 +190,7 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolVarP(&wantJSON, "json", "j", false, "Export to JSon")
+	rootCmd.Flags().IntVar(&maxPage, "p", 10, "Maximum page")
 }
 
 // initConfig reads in config file and ENV variables if set.

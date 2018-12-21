@@ -86,21 +86,25 @@ func getCardDeckInfo(url string) (Deck, error) {
 }
 
 // GetDecks from wsdeck url
-func GetDecks(url string) []Deck {
+func GetDecks(url string, max int) []Deck {
 	var decks = []Deck{}
-	doc, err := goquery.NewDocument(url)
-	if err != nil {
-		log.Fatalf("Unable to parse wsdeck url %v", url)
-	}
-	doc.Find(".deckList .deckname a").Each(func(number int, deckA *goquery.Selection) {
-		url := strings.Join([]string{wsdeckUrl, deckA.AttrOr("href", "undefined")}, "")
-		deck, err := getCardDeckInfo(url)
+	for n := 1; n < max; n++ {
+		pageURL := fmt.Sprintf("%v&page=%v", url, n)
+		log.Printf("Get decks from %v", pageURL)
+		doc, err := goquery.NewDocument(pageURL)
 		if err != nil {
-			log.Fatalf("Error on parsing %v deck", url)
+			log.Fatalf("Unable to parse wsdeck url %v", url)
 		}
+		doc.Find(".deckList .deckname a").Each(func(number int, deckA *goquery.Selection) {
+			url := strings.Join([]string{wsdeckUrl, deckA.AttrOr("href", "undefined")}, "")
+			deck, err := getCardDeckInfo(url)
+			if err != nil {
+				log.Fatalf("Error on parsing %v deck", url)
+			}
 
-		decks = append(decks, deck)
-	})
+			decks = append(decks, deck)
+		})
+	}
 
 	return decks
 }
