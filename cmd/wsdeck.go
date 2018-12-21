@@ -74,6 +74,8 @@ func getCardDeckInfo(url string) (Deck, error) {
 			if err != nil {
 				fmt.Println(err)
 			}
+		} else {
+			card.Level = 42
 		}
 
 		card.Color = s.AttrOr("data-color", "undefined")
@@ -92,7 +94,6 @@ func GetDecks(url string) []Deck {
 	}
 	doc.Find(".deckList .deckname a").Each(func(number int, deckA *goquery.Selection) {
 		url := strings.Join([]string{wsdeckUrl, deckA.AttrOr("href", "undefined")}, "")
-		log.Println(url)
 		deck, err := getCardDeckInfo(url)
 		if err != nil {
 			log.Fatalf("Error on parsing %v deck", url)
